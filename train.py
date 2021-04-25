@@ -9,42 +9,49 @@ DoneSteps = [0] * 10
 
 
 def train():
-    var = 5
+    var = 9
     for e in range(epochs):
         state = env.reset()
         rewards = 0
-        for step in range(steps):
+        step = 0
+        while True:
+            step += 1
+
             if model_type == 0:
                 goal = state[-2:]
                 loss = model.learn(state[np.newaxis, :], goal[np.newaxis, :])
                 print('episode: {}/{}, loss: {}'.format(e, epochs, loss))
                 action = model.choose_action(state)
                 state, _, _ = env.step(action)
+
             if model_type == 1:
                 action = model.choose_action(state)
                 # add randomness to action selection for exploration
+
                 action = np.clip(np.random.normal(action, var), -1, 1)
                 next_state, reward, done = env.step(action)
                 rewards += reward
                 model.store_transition(state, action, reward, next_state)
 
-                if model.memory_counter > model.memory_size:
-                    # decay the action randomness
-                    var *= .9995
-                    model.learn()
-
                 state = next_state
+                #env.render()
 
-                if done:
-                    with open('log.txt', 'a') as File:
-                        File.write(f'{step} {rewards}\n')
-                        print(f'Done in {step} steps, episode: {e}/{epochs}, rewards: {rewards}')
+                if step >= 300:
                     break
 
-            env.render()
+                elif done:
+                    with open('log.txt', 'a') as File:
+                        File.write(f'{step} {rewards}\n')
+                        print(f'Done in {step} steps, episode: {e}/{epochs}, rewards: {rewards}, {var}')
+                    break
 
-        if e % 1000 == 0:
-            model.save_model(model_path)
+        if model.memory_counter > model.memory_size:
+            # decay the action randomness
+            var *= .9997
+            model.learn()
+
+        # if e % 1000 == 0:
+        #    model.save_model(model_path)
 
 
 if __name__ == '__main__':
@@ -74,7 +81,7 @@ if __name__ == '__main__':
         epochs = 300000
         steps = 1
     elif model_type == 1:
-        model = DDPG(2, 8, 1)
+        model = DDPG(2, 6, 1)
         model_path = ARGS.rl_path
         print(model_path)
         epochs = 20000

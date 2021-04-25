@@ -7,10 +7,10 @@ Point = namedtuple('Point', ['x', 'y'])
 
 class Env():
     def __init__(self,
-                 model_type=0,
-                 speed=0.01,
+                 model_type=1,
+                 speed=0.2,
                  angle_range0=(-np.pi, np.pi),
-                 angle_range1=(-np.pi, 0),
+                 angle_range1=(-np.pi, np.pi),
                  image_size=(300, 350),
                  model=None):
         self.model_type = model_type
@@ -19,11 +19,11 @@ class Env():
         self.angle_range1 = angle_range1
         self.image_size = image_size
         self.model = model
-        self.min_dist = 10
+        self.min_dist = 20
         self.target_point = Point(0, 0)
-        self.l0 = 70
+        self.l0 = 60
         self.l1 = 60
-        self.l2 = 50
+        self.l2 = 1
         self.theta0 = 0
         self.theta1 = 0
         self.theta2 = 0
@@ -31,12 +31,13 @@ class Env():
         self.n_action = 2
         self.reset()
 
-    def reset(self, reset_rotation=True):
+    def reset(self, reset_rotation=False):
         self.target_point = self.random_point()
         if reset_rotation:
             self.theta0 = np.random.uniform(*self.angle_range0)
             self.theta1 = np.random.uniform(*self.angle_range1)
             self.theta2 = self.theta1
+
         self._update_point()
         s = self.get_state()
         return s
@@ -67,11 +68,14 @@ class Env():
             self.theta2 = self.theta1
         else:
             return [], 0, True
+
+        #print(self.theta0, self.theta1, self.theta2)
+
         self._update_point()
         dist = np.sqrt((self.target_point.x - self.point3.x) **
                        2 + (self.target_point.y - self.point3.y) ** 2)
 
-        r = (self.min_dist - dist) / self.image_size[0]
+        r = 5 * (self.min_dist - dist) / self.image_size[0]
         done = True if dist < self.min_dist else False
 
         s = self.get_state()
@@ -126,16 +130,17 @@ class Env():
                  (150, 30, 30), 2, lineType=cv2.LINE_AA)
         cv2.circle(img, self.target_point, int(self.min_dist),
                    (75, 75, 75), -1, lineType=cv2.LINE_AA)
-        #cv2.imshow('screen', img)
-        # cv2.waitKey(frame_time)
+        cv2.imshow('screen', img)
+        cv2.waitKey(frame_time)
 
     def get_state(self):
         x1 = self.point1.x / self.image_size[0]
         y1 = self.point1.y / self.image_size[1]
         x2 = self.point2.x / self.image_size[0]
         y2 = self.point2.y / self.image_size[1]
-        x3 = self.point3.x / self.image_size[0]
-        y3 = self.point3.y / self.image_size[1]
+        #x3 = self.point3.x / self.image_size[0]
+        #y3 = self.point3.y / self.image_size[1]
         xt = self.target_point.x / self.image_size[0]
         yt = self.target_point.y / self.image_size[1]
-        return np.array([x1, y1, x2, y2, x3, y3, xt, yt])
+        return np.array([x1, y1, x2, y2,  # x3, y3,
+                         xt, yt])

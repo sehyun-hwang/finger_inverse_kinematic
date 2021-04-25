@@ -11,12 +11,12 @@ gym 0.8.0
 import tensorflow.compat.v1 as tf
 import numpy as np
 
+tf.disable_eager_execution()
+
 LR_A = 0.001    # learning rate for actor
 LR_C = 0.002    # learning rate for critic
 GAMMA = 0.9     # reward discount
 TAU = 0.01      # soft replacement
-
-tf.disable_eager_execution()
 
 
 class DDPG(object):
@@ -36,6 +36,7 @@ class DDPG(object):
 
         with tf.variable_scope('Actor'):
             self.a = self._build_a(self.S, scope='eval', trainable=True)
+            print(tf.summary.tensor_summary('foo', self.a))
             a_ = self._build_a(self.S_, scope='target', trainable=False)
         with tf.variable_scope('Critic'):
             # assign self.a = a in memory when calculating q for td_error,
@@ -67,10 +68,16 @@ class DDPG(object):
         self.atrain = tf.train.AdamOptimizer(LR_A).minimize(
             self.a_loss, var_list=self.ae_params)
 
+        try:
+            import tf_slim as slim
+            model_vars = tf.trainable_variables()
+            slim.model_analyzer.analyze_vars(model_vars, print_info=True)
+        except ImportError as error:
+            print(error)
+
         self.sess.run(tf.global_variables_initializer())
 
     def choose_action(self, s):
-        s = np.array(s)
         return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
 
     def learn(self):
