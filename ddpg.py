@@ -78,6 +78,7 @@ class DDPG(object):
         self.sess.run(tf.global_variables_initializer())
 
     def choose_action(self, s):
+        s = np.array(s)
         return self.sess.run(self.a, {self.S: s[np.newaxis, :]})[0]
 
     def learn(self):
